@@ -18,13 +18,13 @@ class update_frame_id:
         self.pub_depth = rospy.Publisher("/depth_registered/image_rect", Image, queue_size = 1)
         self.pub_info = rospy.Publisher("/rgb/camera_info", CameraInfo, queue_size = 1)
     def callback_raw(self, message):
-        message.header.frame_id = "head_rgbd_sensor_depth_frame"
+        message.header.frame_id = "head_rgbd_sensor_rgb_frame"
         self.pub_raw.publish(message)
     def callback_depth(self, message):
-        message.header.frame_id = "head_rgbd_sensor_depth_frame"
+        message.header.frame_id = "head_rgbd_sensor_rgb_frame"
         self.pub_depth.publish(message)
     def callback_info(self, message):
-        message.header.frame_id = "head_rgbd_sensor_depth_frame"
+        message.header.frame_id = "head_rgbd_sensor_rgb_frame"
         self.pub_info.publish(message)
 
 
