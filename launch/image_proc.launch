@@ -1,0 +1,5 @@
+<launch>
+
+  <node name="image_proc" pkg="image_proc" type="image_proc" ns="/hsrb/head_rgbd_sensor/rgb"/>
+
+</launch>

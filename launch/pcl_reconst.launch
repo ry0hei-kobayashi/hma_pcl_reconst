@@ -1,0 +1,6 @@
+<launch>
+
+  <include file="$(find hma_pcl_reconst)/launch/point_cloud_xyzrgb.launch" />    
+  <include file="$(find hma_pcl_reconst)/launch/image_proc.launch" />    
+
+</launch>

@@ -1,0 +1,14 @@
+<launch>
+  <!--node name="update_frame_id" pkg="hma_pcl_reconst" type="update_frame_id.py" output="screen" /-->
+
+  <!--node pkg="nodelet" type="nodelet" args="manager" name="standalone_nodelet" output="screen"/-->
+
+  <node pkg="nodelet" type="nodelet" name="depth_image_proc" args="standalone depth_image_proc/point_cloud_xyzrgb standalone_nodelet --no-bond">
+   
+    <remap from="image_rect" to="/hsrb/head_rgbd_sensor/depth/image_rect_raw/compressed"/>
+    <remap from="camera_info" to="/hsrb/head_rgbd_sensor/depth_registered/camera_info"/>
+    <remap from="points" to="/hsrb/head_rgbd_sensor/depth_registered/rectified_points"/>
+
+  </node>
+
+</launch>
