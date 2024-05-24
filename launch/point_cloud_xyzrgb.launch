@@ -4,10 +4,14 @@
   <node pkg="nodelet" type="nodelet" args="manager" name="standalone_nodelet" output="screen"/>
 
   <!-- Convert to point cloud -->
-  <node pkg="nodelet" type="nodelet" name="depth_image_proc" args="standalone depth_image_proc/point_cloud_xyzrgb standalone_nodelet --no-bond">
+  <node pkg="nodelet" type="nodelet" name="depth_image_proc" args="standalone depth_image_proc/point_cloud_xyzrgb standalone_nodelet --no-bond" output="screen">
 
   <remap from="depth_registered/points" to="/hma_pcl_reconst/depth_registered/points"/>
-
+  <!-- <param name="queue_size" type="int" value="15" />
+  <param name="exact_sync" type="bool" value="false" /> -->
+  <!-- <remap from="/rgb/image_rect_color" to="/hsrb/head_rgbd_sensor/rgb/image_rect_color"/>
+  <remap from="/depth_registered/image_rect" to="/hsrb/head_rgbd_sensor/depth_registered/image_rect_raw"/>
+  <remap from="/rgb/camera_info" to="/hsrb/head_rgbd_sensor/rgb/camera_info"/> -->
    
   </node>
 
