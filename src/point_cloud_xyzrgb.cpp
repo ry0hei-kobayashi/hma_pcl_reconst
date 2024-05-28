@@ -1,36 +1,3 @@
-/*********************************************************************
-* Software License Agreement (BSD License)
-* 
-*  Copyright (c) 2008, Willow Garage, Inc.
-*  All rights reserved.
-* 
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-* 
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Willow Garage nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-* 
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************/
 #include <boost/version.hpp>
 #if ((BOOST_VERSION / 100) % 1000) >= 53
 #include <boost/thread/lock_guard.hpp>
@@ -52,7 +19,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc/imgproc.hpp>
 
-namespace depth_image_proc {
+//namespace depth_image_proc {
+namespace hma_pcl_reconst {
 
 using namespace message_filters::sync_policies;
 namespace enc = sensor_msgs::image_encodings;
@@ -64,9 +32,9 @@ class PointCloudXyzrgbNodelet : public nodelet::Nodelet
   
   // Subscriptions
   image_transport::SubscriberFilter sub_depth_, sub_rgb_;
-  message_filters::Subscriber<sensor_msgs::CameraInfo> sub_info_;
-  typedef ApproximateTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> SyncPolicy;
-  typedef ExactTime<sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo> ExactSyncPolicy;
+  // message_filters::Subscriber<sensor_msgs::CameraInfo> sub_info_;
+  typedef ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> SyncPolicy;
+  typedef ExactTime<sensor_msgs::Image, sensor_msgs::Image> ExactSyncPolicy;
   typedef message_filters::Synchronizer<SyncPolicy> Synchronizer;
   typedef message_filters::Synchronizer<ExactSyncPolicy> ExactSynchronizer;
   boost::shared_ptr<Synchronizer> sync_;
@@ -78,14 +46,15 @@ class PointCloudXyzrgbNodelet : public nodelet::Nodelet
   ros::Publisher pub_point_cloud_;
 
   image_geometry::PinholeCameraModel model_;
+  sensor_msgs::CameraInfoConstPtr info_msg;
 
   virtual void onInit();
 
   void connectCb();
 
   void imageCb(const sensor_msgs::ImageConstPtr& depth_msg,
-               const sensor_msgs::ImageConstPtr& rgb_msg,
-               const sensor_msgs::CameraInfoConstPtr& info_msg);
+               const sensor_msgs::ImageConstPtr& rgb_msg
+               );
 
   template<typename T>
   void convert(const sensor_msgs::ImageConstPtr& depth_msg,
@@ -96,12 +65,15 @@ class PointCloudXyzrgbNodelet : public nodelet::Nodelet
 
 void PointCloudXyzrgbNodelet::onInit()
 {
+  std::cout << "start init" << std::endl;
   ros::NodeHandle& nh         = getNodeHandle();
   ros::NodeHandle& private_nh = getPrivateNodeHandle();
   rgb_nh_.reset( new ros::NodeHandle(nh, "rgb") );
   ros::NodeHandle depth_nh(nh, "depth_registered");
   rgb_it_  .reset( new image_transport::ImageTransport(*rgb_nh_) );
   depth_it_.reset( new image_transport::ImageTransport(depth_nh) );
+  info_msg = ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/hsrb/head_rgbd_sensor/rgb/camera_info", *rgb_nh_);
+  std::cout << "get camera info" << std::endl;
 
   // Read parameters
   int queue_size;
@@ -112,13 +84,16 @@ void PointCloudXyzrgbNodelet::onInit()
   // Synchronize inputs. Topic subscriptions happen on demand in the connection callback.
   if (use_exact_sync)
   {
-    exact_sync_.reset( new ExactSynchronizer(ExactSyncPolicy(queue_size), sub_depth_, sub_rgb_, sub_info_) );
-    exact_sync_->registerCallback(boost::bind(&PointCloudXyzrgbNodelet::imageCb, this, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3));
+    exact_sync_.reset( new ExactSynchronizer(ExactSyncPolicy(queue_size), sub_depth_, sub_rgb_) );
+    exact_sync_->registerCallback(boost::bind(&PointCloudXyzrgbNodelet::imageCb, this, boost::placeholders::_1, boost::placeholders::_2));
   }
   else
   {
-    sync_.reset( new Synchronizer(SyncPolicy(queue_size), sub_depth_, sub_rgb_, sub_info_) );
-    sync_->registerCallback(boost::bind(&PointCloudXyzrgbNodelet::imageCb, this, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3));
+    std::cout << "connect callback" << std::endl;
+    sync_.reset( new Synchronizer(SyncPolicy(queue_size), sub_depth_, sub_rgb_) );
+    sync_->registerCallback(boost::bind(&PointCloudXyzrgbNodelet::imageCb, this, boost::placeholders::_1, boost::placeholders::_2));
+    std::cout << "connect callback complete" << std::endl;
+
   }
   
   // Monitor whether anyone is subscribed to the output
@@ -126,6 +101,8 @@ void PointCloudXyzrgbNodelet::onInit()
   // Make sure we don't enter connectCb() between advertising and assigning to pub_point_cloud_
   boost::lock_guard<boost::mutex> lock(connect_mutex_);
   pub_point_cloud_ = depth_nh.advertise<PointCloud>("points", 1, connect_cb, connect_cb);
+  std::cout << "init complete" << std::endl;
+
 }
 
 // Handles (un)subscribing when clients (un)subscribe
@@ -134,12 +111,14 @@ void PointCloudXyzrgbNodelet::connectCb()
   boost::lock_guard<boost::mutex> lock(connect_mutex_);
   if (pub_point_cloud_.getNumSubscribers() == 0)
   {
+    std::cout << "stop subscribe" << std::endl;
     sub_depth_.unsubscribe();
     sub_rgb_  .unsubscribe();
-    sub_info_ .unsubscribe();
+    // sub_info_ .unsubscribe();
   }
   else if (!sub_depth_.getSubscriber())
   {
+    std::cout << "start subscribe" << std::endl;
     ros::NodeHandle& private_nh = getPrivateNodeHandle();
     // parameter for depth_image_transport hint
     std::string depth_image_transport_param = "depth_image_transport";
@@ -151,14 +130,15 @@ void PointCloudXyzrgbNodelet::connectCb()
     // rgb uses normal ros transport hints.
     image_transport::TransportHints hints("raw", ros::TransportHints(), private_nh);
     sub_rgb_  .subscribe(*rgb_it_,   "image_rect_color", 1, hints);
-    sub_info_ .subscribe(*rgb_nh_,   "camera_info",      1);
+    // sub_info_ .subscribe(*rgb_nh_,   "camera_info",      1);
   }
 }
 
 void PointCloudXyzrgbNodelet::imageCb(const sensor_msgs::ImageConstPtr& depth_msg,
-                                      const sensor_msgs::ImageConstPtr& rgb_msg_in,
-                                      const sensor_msgs::CameraInfoConstPtr& info_msg)
+                                      const sensor_msgs::ImageConstPtr& rgb_msg_in
+                                      )
 {
+  std::cout << "start image cb" << std::endl;
   // Check for bad inputs
   if (depth_msg->header.frame_id != rgb_msg_in->header.frame_id)
   {
@@ -306,7 +286,7 @@ void PointCloudXyzrgbNodelet::convert(const sensor_msgs::ImageConstPtr& depth_ms
   float center_y = model_.cy();
 
   // Combine unit conversion (if necessary) with scaling by focal length for computing (X,Y)
-  double unit_scaling = DepthTraits<T>::toMeters( T(1) );
+  double unit_scaling = depth_image_proc::DepthTraits<T>::toMeters( T(1) );
   float constant_x = unit_scaling / model_.fx();
   float constant_y = unit_scaling / model_.fy();
   float bad_point = std::numeric_limits<float>::quiet_NaN ();
@@ -331,7 +311,7 @@ void PointCloudXyzrgbNodelet::convert(const sensor_msgs::ImageConstPtr& depth_ms
       T depth = depth_row[u];
 
       // Check for invalid measurements
-      if (!DepthTraits<T>::valid(depth))
+      if (!depth_image_proc::DepthTraits<T>::valid(depth))
       {
         *iter_x = *iter_y = *iter_z = bad_point;
       }
@@ -340,7 +320,7 @@ void PointCloudXyzrgbNodelet::convert(const sensor_msgs::ImageConstPtr& depth_ms
         // Fill in XYZ
         *iter_x = (u - center_x) * depth * constant_x;
         *iter_y = (v - center_y) * depth * constant_y;
-        *iter_z = DepthTraits<T>::toMeters(depth);
+        *iter_z = depth_image_proc::DepthTraits<T>::toMeters(depth);
       }
 
       // Fill in color
@@ -356,4 +336,39 @@ void PointCloudXyzrgbNodelet::convert(const sensor_msgs::ImageConstPtr& depth_ms
 
 // Register as nodelet
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(depth_image_proc::PointCloudXyzrgbNodelet,nodelet::Nodelet);
+//PLUGINLIB_EXPORT_CLASS(depth_image_proc::PointCloudXyzrgbNodelet,nodelet::Nodelet);
+PLUGINLIB_EXPORT_CLASS(hma_pcl_reconst::PointCloudXyzrgbNodelet,nodelet::Nodelet);
+
+/*********************************************************************
+* Software License Agreement (BSD License)
+* 
+*  Copyright (c) 2008, Willow Garage, Inc.
+*  All rights reserved.
+* 
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+* 
+*   * Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*   * Redistributions in binary form must reproduce the above
+*     copyright notice, this list of conditions and the following
+*     disclaimer in the documentation and/or other materials provided
+*     with the distribution.
+*   * Neither the name of the Willow Garage nor the names of its
+*     contributors may be used to endorse or promote products derived
+*     from this software without specific prior written permission.
+* 
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+*  POSSIBILITY OF SUCH DAMAGE.
+*********************************************************************/

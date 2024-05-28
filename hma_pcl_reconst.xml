@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<library path="lib/libhma_pcl_reconst_nodelet">
+
+	<class name="hma_pcl_reconst/src/point_cloud_xyzrgb"
+         type="hma_pcl_reconst::PointCloudXyzrgbNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Nodelet to combine registered depth image and RGB image into XYZRGB point cloud.
+    </description>
+  </class>
+</library>

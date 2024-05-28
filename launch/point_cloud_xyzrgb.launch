@@ -4,7 +4,7 @@
   <node pkg="nodelet" type="nodelet" args="manager" name="standalone_nodelet" output="screen"/>
 
   <!-- Convert to point cloud -->
-  <node pkg="nodelet" type="nodelet" name="depth_image_proc" args="standalone depth_image_proc/point_cloud_xyzrgb standalone_nodelet --no-bond" output="screen">
+  <node pkg="nodelet" type="nodelet" name="hmc_pcl_reconst" args="standalone hma_pcl_reconst/point_cloud_xyzrgb standalone_nodelet --no-bond" output="screen">
 
   <remap from="depth_registered/points" to="/hma_pcl_reconst/depth_registered/points"/>
   <!-- <param name="queue_size" type="int" value="15" />
