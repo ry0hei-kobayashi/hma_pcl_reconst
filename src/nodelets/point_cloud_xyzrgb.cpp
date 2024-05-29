@@ -72,6 +72,7 @@ void PointCloudXyzrgbNodelet::onInit()
   ros::NodeHandle depth_nh(nh, "depth_registered");
   rgb_it_  .reset( new image_transport::ImageTransport(*rgb_nh_) );
   depth_it_.reset( new image_transport::ImageTransport(depth_nh) );
+
   info_msg = ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/hsrb/head_rgbd_sensor/rgb/camera_info", *rgb_nh_);
   std::cout << "get camera info" << std::endl;
 
@@ -114,6 +115,7 @@ void PointCloudXyzrgbNodelet::connectCb()
     std::cout << "stop subscribe" << std::endl;
     sub_depth_.unsubscribe();
     sub_rgb_  .unsubscribe();
+    //TODO
     // sub_info_ .unsubscribe();
   }
   else if (!sub_depth_.getSubscriber())

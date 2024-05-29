@@ -9,22 +9,12 @@
 
 
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>image_proc</build_depend>
-  <build_depend>depth_image_proc</build_depend>
+  <build_depend>nodelet</build_depend>
+  <build_depend>pluginlib</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>roscpp</build_depend>
-  <build_depend>boost</build_depend>
-  <build_depend>cmake_modules</build_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>eigen_conversions</build_depend>
-  <build_depend>image_geometry</build_depend>
-  <build_depend>image_transport</build_depend>
-  <build_depend>message_filters</build_depend>
-  <build_depend>nodelet</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>stereo_msgs</build_depend>
-  <build_depend>tf2</build_depend>
-  <build_depend>tf2_ros</build_depend>
+  <build_depend>image_proc</build_depend>
+  <build_depend>depth_image_proc</build_depend>
   <build_depend>sensor_msgs</build_depend>
 
   <build_export_depend>image_proc</build_export_depend>
@@ -33,24 +23,16 @@
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
 
+  <exec_depend>nodelet</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
   <exec_depend>image_proc</exec_depend>
   <exec_depend>depth_image_proc</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>roscpp</exec_depend>
-  <exec_depend>pcl_ros</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>boost</exec_depend>
-  <exec_depend>cv_bridge</exec_depend>
-  <exec_depend>eigen_conversions</exec_depend>
-  <exec_depend>image_geometry</exec_depend>
-  <exec_depend>image_transport</exec_depend>
-  <exec_depend>nodelet</exec_depend>
-  <exec_depend>tf2</exec_depend>
-  <exec_depend>tf2_ros</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
 
   <export>
-    <nodelet plugin="${prefix}/hma_pcl_reconst.xml" />
+    <nodelet plugin="${prefix}/nodelet_description.xml" />
   </export>
 
 </package>
