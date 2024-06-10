@@ -8,7 +8,10 @@ rospy.init_node("update_frame_id")
 
 #Updating frame id for the error depth_front frame id does not match rgb_front frame id
 class update_frame_id:
+
+
     def __init__(self):
+
         self.image = Image()
         #subscribe to your specific sensors
         self.sub_raw = rospy.Subscriber("/hsrb/head_rgbd_sensor/rgb/image_rect_color", Image, self.callback_raw)
@@ -17,12 +20,15 @@ class update_frame_id:
         self.pub_raw = rospy.Publisher("/rgb/image_rect_color", Image, queue_size = 1)
         self.pub_depth = rospy.Publisher("/depth_registered/image_rect", Image, queue_size = 1)
         self.pub_info = rospy.Publisher("/rgb/camera_info", CameraInfo, queue_size = 1)
+
     def callback_raw(self, message):
         message.header.frame_id = "head_rgbd_sensor_rgb_frame"
         self.pub_raw.publish(message)
+
     def callback_depth(self, message):
         message.header.frame_id = "head_rgbd_sensor_rgb_frame"
         self.pub_depth.publish(message)
+
     def callback_info(self, message):
         message.header.frame_id = "head_rgbd_sensor_rgb_frame"
         self.pub_info.publish(message)

@@ -4,18 +4,16 @@
   <arg name="manager_name" default="nodelet_manager" />
   <arg name="manager_threads" default="4" />
 
-  <node pkg="nodelet" type="nodelet" args="manager" name="standalone_nodelet" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager" output="screen"/>
 
   <!-- Convert to point cloud -->
-  <node pkg="nodelet" type="nodelet" name="hmc_pcl_reconst" args="standalone hma_pcl_reconst/point_cloud_xyzrgb standalone_nodelet --no-bond" output="screen">
-
-  <remap from="depth_registered/points" to="/hma_pcl_reconst/depth_registered/points"/>
-  <!-- <param name="queue_size" type="int" value="15" />
-  <param name="exact_sync" type="bool" value="false" /> -->
-  <!-- <remap from="/rgb/image_rect_color" to="/hsrb/head_rgbd_sensor/rgb/image_rect_color"/>
-  <remap from="/depth_registered/image_rect" to="/hsrb/head_rgbd_sensor/depth_registered/image_rect_raw"/>
-  <remap from="/rgb/camera_info" to="/hsrb/head_rgbd_sensor/rgb/camera_info"/> -->
-   
+  <node pkg="nodelet" type="nodelet" name="hma_pcl_reconst_nodelet" args="load hma_pcl_reconst/PointCloudXyzrgbNodelet standalone_nodelet --no-bond" output="screen">
+    <remap from="depth_registered/points" to="/hma_pcl_reconst/depth_registered/points"/>
+    <remap from="/rgb/image_rect_color" to="/hsrb/head_rgbd_sensor/rgb/image_rect_color"/>
+    <remap from="/depth_registered/image_rect" to="/hsrb/head_rgbd_sensor/depth_registered/image_rect_raw"/>
+    <remap from="/rgb/camera_info" to="/hsrb/head_rgbd_sensor/rgb/camera_info"/>
+    <param name="queue_size" type="int" value="15" />
+    <param name="exact_sync" type="bool" value="false" />
   </node>
-
 </launch>
+
