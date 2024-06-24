@@ -65,7 +65,7 @@ class PointCloudXyzrgbNodelet : public nodelet::Nodelet
 
 void PointCloudXyzrgbNodelet::onInit()
 {
-  std::cout << "start init" << std::endl;
+  //std::cout << "hma_pcl_reconst initialized" << std::endl;
   ros::NodeHandle& nh         = getNodeHandle();
   ros::NodeHandle& private_nh = getPrivateNodeHandle();
   rgb_nh_.reset( new ros::NodeHandle(nh, "rgb") );
@@ -74,7 +74,7 @@ void PointCloudXyzrgbNodelet::onInit()
   depth_it_.reset( new image_transport::ImageTransport(depth_nh) );
 
   info_msg = ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/hsrb/head_rgbd_sensor/rgb/camera_info", *rgb_nh_);
-  std::cout << "get camera info" << std::endl;
+  //std::cout << "hma_pcl_reconst get camera info" << std::endl;
 
   // Read parameters
   int queue_size;
@@ -90,10 +90,9 @@ void PointCloudXyzrgbNodelet::onInit()
   }
   else
   {
-    std::cout << "connect callback" << std::endl;
     sync_.reset( new Synchronizer(SyncPolicy(queue_size), sub_depth_, sub_rgb_) );
     sync_->registerCallback(boost::bind(&PointCloudXyzrgbNodelet::imageCb, this, boost::placeholders::_1, boost::placeholders::_2));
-    std::cout << "connect callback complete" << std::endl;
+    std::cout << "hma_pcl_reconst. ->  connect callback complete" << std::endl;
 
   }
   
@@ -102,7 +101,7 @@ void PointCloudXyzrgbNodelet::onInit()
   // Make sure we don't enter connectCb() between advertising and assigning to pub_point_cloud_
   boost::lock_guard<boost::mutex> lock(connect_mutex_);
   pub_point_cloud_ = depth_nh.advertise<PointCloud>("points", 1, connect_cb, connect_cb);
-  std::cout << "init complete" << std::endl;
+  std::cout << "hma_pcl_reconst. -> initialized" << std::endl;
 
 }
 
@@ -112,15 +111,14 @@ void PointCloudXyzrgbNodelet::connectCb()
   boost::lock_guard<boost::mutex> lock(connect_mutex_);
   if (pub_point_cloud_.getNumSubscribers() == 0)
   {
-    std::cout << "stop subscribe" << std::endl;
+    std::cout << "hma_pcl_reconst. -> stop subscribe" << std::endl;
     sub_depth_.unsubscribe();
     sub_rgb_  .unsubscribe();
-    //TODO
     // sub_info_ .unsubscribe();
   }
   else if (!sub_depth_.getSubscriber())
   {
-    std::cout << "start subscribe" << std::endl;
+    std::cout << "hma_pcl_reconst. -> start subscribe" << std::endl;
     ros::NodeHandle& private_nh = getPrivateNodeHandle();
     // parameter for depth_image_transport hint
     std::string depth_image_transport_param = "depth_image_transport";
@@ -140,7 +138,7 @@ void PointCloudXyzrgbNodelet::imageCb(const sensor_msgs::ImageConstPtr& depth_ms
                                       const sensor_msgs::ImageConstPtr& rgb_msg_in
                                       )
 {
-  std::cout << "start image cb" << std::endl;
+  //std::cout << "start image cb" << std::endl;
   // Check for bad inputs
   if (depth_msg->header.frame_id != rgb_msg_in->header.frame_id)
   {
